@@ -38,6 +38,20 @@ double critical_sum(double* arr, int n) {
 	double sum = 0;
 #pragma omp parallel for
 	for (int i = 0; i < n; i++) {
+#pragma omp critical
+		{
+		sum += arr[i];
+		}
+	}
+	return sum;
+}
+
+double atomic_sum(double* arr, int n) {
+
+	double sum = 0;
+#pragma omp parallel for
+	for (int i = 0; i < n; i++) {
+#pragma omp atomic
 		sum += arr[i];
 	}
 	return sum;
@@ -81,12 +95,13 @@ int main()
 			sum = critical_sum(arr, N);
 			end = omp_get_wtime();
 			double tc = end - start;
+			cout << '.'; // подобие полосы загрузки для понимания
 			// прибавляем получившееся для последующего усреднения
 			timeseq += ts; timepar += tp; timecrit += tc; sred += timeseq / timepar; ered += timeseq / (timepar * 16); scrit += timeseq / timecrit; ecrit += timeseq / (timecrit * 16);
 		}
 		delete[] arr;
 		outFile << N << ',' << timeseq / 20 << ',' << timepar / 20 << ',' << timecrit / 20 << ',' << sred / 20 << ',' << ered / 20 << ',' << scrit / 20 << ',' << ecrit / 20 << '\n';
-		
+		cout << endl; // вывод в csv файл усреднённых значений
 	}
 	outFile.close();
 }
