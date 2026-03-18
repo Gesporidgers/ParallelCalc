@@ -53,12 +53,16 @@ double critical_sum(double* arr, int n) {
 }
 
 double atomic_sum(double* arr, int n) {
-
 	double sum = 0;
-#pragma omp parallel for
-	for (int i = 0; i < n; i++) {
+#pragma omp parallel
+	{
+		double local_sum = 0;
+#pragma omp for
+		for (int i = 0; i < n; i++) {
+			local_sum += arr[i];
+		}
 #pragma omp atomic
-		sum += arr[i];
+		sum += local_sum;
 	}
 	return sum;
 }
@@ -75,6 +79,7 @@ int main()
 	}
 	outFile << "N,Ts,Tred,Tcrit,Tatom,Sred,Ered,Scrit,Ecrit,Satom,Eatom\n";
 	outFile << fixed << setprecision(6);
+	cout << fixed << setprecision(10);
 	vector<int> Ns{ 10000,100000,1000000,10000000/*,1000000000*/ }; //размерности массивов
 	for (int N : Ns) {
 		cout << "Calculating for N=" << N << endl; // для понимания что делает программа
@@ -90,33 +95,34 @@ int main()
 			sum = sequential_sum(arr, N);
 			double end = omp_get_wtime();
 			double ts = end - start;
-
+			
 			//прогон параллельный с готовыми потоками, чтобы не тратилось время
 			start = omp_get_wtime();
 			sum = parallel_sum(arr, N);
 			end = omp_get_wtime();
 			double tp = end - start;
-
+			
 			//прогон параллельный но с мьютексом
 			start = omp_get_wtime();
 			sum = critical_sum(arr, N);
 			end = omp_get_wtime();
 			double tc = end - start;
-
+			
 			//прогон параллельный но с атомарной операцией
 			start = omp_get_wtime();
-			sum = critical_sum(arr, N);
+			sum = atomic_sum(arr, N);
 			end = omp_get_wtime();
 			double ta = end - start;
 			cout << '.'; // подобие полосы загрузки для понимания
 			// прибавляем получившееся для последующего усреднения
+			
 			timeseq += ts; timepar += tp; timecrit += tc; timeatom += ta; sred += timeseq / timepar; ered += timeseq / (timepar * 16); scrit += timeseq / timecrit; ecrit += timeseq / (timecrit * 16); satom += timeseq / timeatom; eatom += timeseq / (timeatom * 16);
 		}
 		delete[] arr;
 		outFile << N << ',' << timeseq / 20 << ',' << timepar / 20 << ',' << timecrit / 20 << ','<< timeatom / 20 << ',' 
-			<< sred / 20 << ',' << ered / 20 << ',' 
-			<< scrit / 20 << ',' << ecrit / 20<< ',' 
-			<< satom / 20 << ',' << eatom / 20 << '\n';
+			<< (timeseq / 20) / (timepar / 20) << ',' << (timeseq / 20) / ((timepar / 20)*16) << ','
+			<< (timeseq / 20)/(timecrit/20) << ',' << (timeseq / 20)/((timecrit/20)*16)<< ','
+			<< (timeseq / 20)/(timeatom/20) << ',' << (timeseq / 20)/((timeatom/20)*16) << '\n';
 		cout << endl; // вывод в csv файл усреднённых значений
 	}
 	outFile.close();
