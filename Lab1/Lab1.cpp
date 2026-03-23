@@ -80,7 +80,7 @@ int main()
 	outFile << "N,Ts,Tred,Tcrit,Tatom,Sred,Ered,Scrit,Ecrit,Satom,Eatom\n";
 	outFile << fixed << setprecision(6);
 	cout << fixed << setprecision(10);
-	vector<int> Ns{ 10000,100000,1000000,10000000/*,1000000000*/ }; //размерности массивов
+	vector<int> Ns{ 10000,100000,1000000,10000000,100000000,1000000000 }; //размерности массивов
 	for (int N : Ns) {
 		cout << "Calculating for N=" << N << endl; // для понимания что делает программа
 		double* arr = new double[N];
