@@ -1,11 +1,11 @@
-﻿// Lab2.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
-#include <iostream>
+﻿#include <iostream>
 #include <fstream>
 #include <omp.h>
 #include <iomanip>
 #include <string>
 #include <vector>
+
+#define FULL	//для более быстрой проверки
 
 using namespace std;
 
@@ -72,7 +72,12 @@ void block_times(double* arr, double* res, int n, int BLOCK_SIZE) {
 
 int main()
 {
-	vector<int> Ns{ 256,512,1024,2048,4096/**/ };
+#ifdef FULL					
+	vector<int> Ns{ 256,512,1024,2048,4096};
+#else
+	vector<int> Ns{ 256,512,1024}; 
+#endif // FULL
+
 	string filename1 = "R(N).csv";
 	string filename2 = "R(BLOCK).csv";
 	string filename3 = "MainTable.csv";
@@ -116,7 +121,7 @@ int main()
 
 	//Блочная параллелька
 	ofstream outFile2(filename2);
-	outFile2 << "size,R";
+	outFile2 << "size,R\n";
 	omp_set_num_threads(16);
 	cout << "Block parallel (N=2048). File R(BLOCK).csv" << endl;
 	for (int i = 32; i <= 256; i *= 2)
@@ -132,6 +137,8 @@ int main()
 	}
 	cout << endl;
 	outFile2.close();
+
+#ifdef FULL
 
 	// Файл для таблицы 3.2 и файл для зависимости S от потоков
 	cout << "File MainTable.csv" << endl;
@@ -186,6 +193,6 @@ int main()
 	}
 	cout << endl;
 	outFile3.close();
-
+#endif // FULL
 }
 
