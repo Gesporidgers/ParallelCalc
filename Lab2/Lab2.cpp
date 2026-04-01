@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <omp.h>
-#include <iomanip>
+#include "csv_writer.h"
 #include <string>
 #include <vector>
 
@@ -85,7 +85,10 @@ int main()
 	string filename2 = "R(BLOCK).csv";
 	string filename3 = "MainTable.csv";
 	string filename4 = "S(thread).csv";
+	string filename5 = "BestBlock.csv";
 	ofstream outFile1(filename1);
+	csv_writer csv(filename5);
+	
 	double ijkTime;
 	vector<double> Rs;
 #pragma omp parallel
@@ -93,6 +96,8 @@ int main()
 		int id = omp_get_thread_num();
 	}
 	outFile1 << "N,Rclassic,Ralt,Rpar\n";
+	csv << "N" << "BestBlock";
+	csv.end_row();
 	cout << "File R(N).csv" << endl;
 	for (int N : Ns) {
 		if (Rs.size() != 0) Rs.clear();
@@ -132,11 +137,13 @@ int main()
 				sz = i;
 			}
 		}
-		cout << "\nBest block size: " << sz << endl; // сделать вывод в файл
+		cout << endl;
+		csv << N << sz;
+		csv.end_row();// сделать вывод в файл
 		delete[] arr, res;
 	}
 	outFile1.close();
-
+	csv.close();
 	//Блочная параллелька
 	ofstream outFile2(filename2);
 	outFile2 << "size,R\n";
