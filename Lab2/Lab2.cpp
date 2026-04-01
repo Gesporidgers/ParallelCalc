@@ -5,12 +5,12 @@
 #include <string>
 #include <vector>
 
-#define FULL	//для более быстрой проверки
+//#define FULL	//для более быстрой проверки
 
 using namespace std;
 
-double* generate_array(int n, bool empty = false) {
-	double* arr = new double[n * n];
+float* generate_array(int n, bool empty = false) {
+	float* arr = new float[n * n];
 	srand(time(0));
 	if (empty)
 		for (int i = 0; i < n; ++i) {
@@ -20,7 +20,7 @@ double* generate_array(int n, bool empty = false) {
 	else
 		for (int i = 0; i < n; ++i) {
 			for (int j = 0; j < n; ++j)
-				arr[i * n + j] = (double)rand() / RAND_MAX - 0.5;
+				arr[i * n + j] = (float)rand() / RAND_MAX - 0.5;
 		}
 	return arr;
 }
@@ -29,7 +29,7 @@ double R(double t, double n) {
 	return (2 * n * n * n) / (t * 1e9);
 }
 
-void classic_times(double* arr, double* res, int n) {
+void classic_times(float* arr, float* res, int n) {
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 			for (int k = 0; k < n; ++k) {
@@ -38,16 +38,19 @@ void classic_times(double* arr, double* res, int n) {
 
 }
 
-void alt_times(double* arr, double* res, int n) {
+void alt_times(float* arr, float* res, int n) {
 	for (int i = 0; i < n; ++i)
-		for (int k = 0; k < n; ++k)
+		for (int k = 0; k < n; ++k) {
+			float tmp = arr[i * n + k];
 			for (int j = 0; j < n; ++j) {
-				res[i * n + j] += arr[i * n + k] * arr[k * n + j];
+				res[i * n + j] += tmp * arr[k * n + j];
 			}
+		}
+
 
 }
 
-void parallel_times(double* arr, double* res, int n) {
+void parallel_times(float* arr, float* res, int n) {
 #pragma omp parallel for
 	for (int i = 0; i < n; ++i)
 		for (int k = 0; k < n; ++k)
@@ -57,7 +60,7 @@ void parallel_times(double* arr, double* res, int n) {
 
 }
 
-void block_times(double* arr, double* res, int n, int BLOCK_SIZE) {
+void block_times(float* arr, float* res, int n, int BLOCK_SIZE) {
 #pragma omp parallel for
 	for (int ii = 0; ii < n; ii += BLOCK_SIZE)
 		for (int jj = 0; jj < n; jj += BLOCK_SIZE)
@@ -73,9 +76,9 @@ void block_times(double* arr, double* res, int n, int BLOCK_SIZE) {
 int main()
 {
 #ifdef FULL					
-	vector<int> Ns{ 256,512,1024,2048,4096};
+	vector<int> Ns{ 256,512,1024,2048,4096 };
 #else
-	vector<int> Ns{ 256,512,1024}; 
+	vector<int> Ns{ 256,512,1024 };
 #endif // FULL
 
 	string filename1 = "R(N).csv";
@@ -84,7 +87,7 @@ int main()
 	string filename4 = "S(thread).csv";
 	ofstream outFile1(filename1);
 	double ijkTime;
-
+	vector<double> Rs;
 #pragma omp parallel
 	{
 		int id = omp_get_thread_num();
@@ -92,9 +95,10 @@ int main()
 	outFile1 << "N,Rclassic,Ralt,Rpar\n";
 	cout << "File R(N).csv" << endl;
 	for (int N : Ns) {
+		if (Rs.size() != 0) Rs.clear();
 		cout << "Calculating for N=" << N << endl;
-		double* arr = generate_array(N);
-		double* res = generate_array(N, true);
+		float* arr = generate_array(N);
+		float* res = generate_array(N, true);
 
 		double start = omp_get_wtime();
 		classic_times(arr, res, N);		//классическое умножение
@@ -114,7 +118,21 @@ int main()
 		parallel_times(arr, res, N);//параллелька
 		end = omp_get_wtime();
 		outFile1 << R(end - start, N) << '\n';
-		cout << '.' << endl;
+		cout << '.';
+		double Rtmp = -1;
+		int sz;
+		for (int i = 32; i <= 256; i *= 2)
+		{
+			double start = omp_get_wtime();
+			block_times(arr, res, N, i);//блочная параллелька
+			double end = omp_get_wtime();
+			cout << '.';
+			if (R(end - start, N) > Rtmp) {
+				Rtmp = R(end - start, N);
+				sz = i;
+			}
+		}
+		cout << "\nBest block size: " << sz << endl; // сделать вывод в файл
 		delete[] arr, res;
 	}
 	outFile1.close();
@@ -124,19 +142,24 @@ int main()
 	outFile2 << "size,R\n";
 	omp_set_num_threads(16);
 	cout << "Block parallel (N=2048). File R(BLOCK).csv" << endl;
+	double Rtmp = -1;
+	int sz;
 	for (int i = 32; i <= 256; i *= 2)
 	{
-		double* arr = generate_array(2048);
-		double* res = generate_array(2048, true);
+		float* arr = generate_array(2048);
+		float* res = generate_array(2048, true);
 		double start = omp_get_wtime();
 		block_times(arr, res, 2048, i);//блочная параллелька
 		double end = omp_get_wtime();
 		outFile2 << i << ',' << R(end - start, 2048) << '\n';
 		cout << '.';
+		
 		delete[] arr, res;
 	}
 	cout << endl;
 	outFile2.close();
+
+
 
 #ifdef FULL
 
@@ -147,8 +170,8 @@ int main()
 	outFile3 << "threads,S\n";
 	outFile4 << "ver,time,R\n";
 
-	double* arr = generate_array(2048);
-	double* res = generate_array(2048, true);
+	float* arr = generate_array(2048);
+	float* res = generate_array(2048, true);
 
 	double start = omp_get_wtime();
 	classic_times(arr, res, 2048);		//классическое умножение
@@ -181,8 +204,8 @@ int main()
 	cout << "File S(thread).csv" << endl;
 	for (int i = 1; i <= 16; i *= 2)
 	{
-		double* arr = generate_array(2048);
-		double* res = generate_array(2048, true);
+		float* arr = generate_array(2048);
+		float* res = generate_array(2048, true);
 		omp_set_num_threads(i);
 		double start = omp_get_wtime();
 		parallel_times(arr, res, 2048); //параллелька
