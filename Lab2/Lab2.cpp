@@ -1,9 +1,9 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <omp.h>
-#include "csv_writer.h"
 #include <string>
 #include <vector>
+#include "csv_writer.h"
 
 //#define FULL	//для более быстрой проверки
 
