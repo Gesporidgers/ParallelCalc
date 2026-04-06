@@ -17,5 +17,6 @@ target_link_libraries(Lab1 csv OpenMP::OpenMP_CXX)
 add_executable(Lab2 Lab2/Lab2.cpp)
 target_link_libraries(Lab2 csv OpenMP::OpenMP_CXX)
 
+set(CMAKE_CXX_FLAGS "-O2")
 add_executable(Lab3 Lab3/Lab3.cpp)
 target_link_libraries(Lab3 csv OpenMP::OpenMP_CXX)
