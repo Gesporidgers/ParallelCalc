@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 4.2)
+project(Labs_ParallelCalc)
+set(CMAKE_CXX_STANDARD 23)
+if(WIN32)
+	set(CMAKE_CXX_FLAGS "-Od")
+else()
+	set(CMAKE_CXX_FLAGS "-O0")
+endif()
+
+find_package(OpenMP REQUIRED)
+
+add_library(csv INTERFACE)
+target_include_directories(csv INTERFACE Utility)
+add_executable(Lab1 Lab1/Lab1.cpp)
+target_link_libraries(Lab1 csv OpenMP::OpenMP_CXX)
+
+add_executable(Lab2 Lab2/Lab2.cpp)
+target_link_libraries(Lab2 csv OpenMP::OpenMP_CXX)
+
+add_executable(Lab3 Lab3/Lab3.cpp)
+target_link_libraries(Lab3 csv OpenMP::OpenMP_CXX)

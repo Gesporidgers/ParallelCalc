@@ -5,7 +5,7 @@
 #include <vector>
 #include "csv_writer.h"
 
-//#define FULL	//для более быстрой проверки
+#define FULL	//для более быстрой проверки
 
 using namespace std;
 
