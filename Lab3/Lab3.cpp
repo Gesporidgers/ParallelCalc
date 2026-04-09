@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include "csv_writer.h"
+#include <csv_writer.h>
 #include <algorithm>
 #include <omp.h>
 #include <vector>
@@ -73,6 +73,8 @@ int main()
 {
     int N = 5'000'000'0;
     string filename1 = "T(C).csv";
+    string filename2 = "S(P).csv";
+    string filename3 = "E(P).csv";
     csv_writer csv1(filename1);
     int opt_C = 0;
     double min_time =100;
@@ -98,6 +100,7 @@ int main()
         }
         delete[] arr;
     }
+    csv1.close();
     cout << "optimum cutoff = " << opt_C << " with time " << min_time << endl;
 
     cout << "sequental sort..." << endl;
@@ -105,5 +108,28 @@ int main()
     double start = omp_get_wtime();
     sort(arr,arr+N);
     double end = omp_get_wtime();
-    cout << end - start << endl;
+    double time = end - start;
+    cout << time << endl;
+    csv_writer csv2(filename2), csv3(filename3);
+    csv2 << "P,S";
+    csv2.end_row();
+    csv3 << "P,E";
+    csv3.end_row();
+    cout << "File S(P).csv and E(P)" << endl;
+    for (int i = 1; i <= 16 ; i*=2){
+        cout << "P = " << i << endl;
+        int* arr = generate_array(N);
+        omp_set_num_threads(i);
+        start = omp_get_wtime();
+        run_parallel_sort(arr,N,opt_C);
+        end = omp_get_wtime();
+        double sp = time / (end - start);
+        csv2 << i << sp;
+        csv2.end_row();
+        csv3 << i << sp/i;
+        csv3.end_row();
+        delete[] arr;
+    }
+    csv2.close();
+    csv3.close();
 }

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 4.2)
 project(Labs_ParallelCalc)
 set(CMAKE_CXX_STANDARD 23)
+message(${CMAKE_CXX_COMPILER_ID})
 if(WIN32)
 	set(CMAKE_CXX_FLAGS "-O2 -openmp:llvm")
 else()
