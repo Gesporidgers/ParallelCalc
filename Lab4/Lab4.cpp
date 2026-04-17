@@ -135,7 +135,6 @@ void simulate_fragmented(CellType **grid_in, CellType **grid_out, int W, int H)
         
         for (int x = 0; x < W; ++x)
         {
-            // Чтение окрестности Мура (8 соседей)
             int neighbors =
                 grid_in[(y - 1 + H) % H][(x - 1 + W) % W] + // 1
                 grid_in[(y - 1 + H) % H][(x + W) % W] +     // 2
@@ -145,7 +144,6 @@ void simulate_fragmented(CellType **grid_in, CellType **grid_out, int W, int H)
                 grid_in[(y + 1 + H) % H][(x - 1 + W) % W] + // 6
                 grid_in[(y + 1 + H) % H][(x + W) % W] +     // 7
                 grid_in[(y + 1 + H) % H][(x + 1 + W) % W];  // 8
-            // .// вычисление next_state .//
             CellType current = grid_in[y][x];
             CellType next_state = 0;
             if (current == 1 && (neighbors == 2 || neighbors == 3))
@@ -161,17 +159,53 @@ using namespace std;
 int main()
 {
     string filename = "histogramm.csv";
-    csv_writer csv1(filename);
-    csv1 << "iteration,static,fragmented";
+    string filename2 = "histogramm2.csv";
+    csv_writer csv1(filename), csv2(filename2);
+    csv1 << "iteration" << "static"<< "fragmented";
+    csv2 << "iteration" << "static"<< "fragmented";
     csv1.end_row();
+    csv2.end_row();
 #pragma omp parallel
     {
         int id = omp_get_thread_num();
     }
     CellType *arrIn = generate_array(15000 * 15000);
     CellType **arrIn2D = generate_array2D(15000);
-    cout << "Static + fragmented" << endl;
-    //omp_set_num_threads(1);
+    CellType *arrOut = generate_array(15000 * 15000, true);
+    CellType **arrOut2D = generate_array2D(15000, true);
+    cout << "Static + fragmented multithread" << endl;
+    for (int i = 0; i < 100; ++i)
+    {
+        
+        int *alive = new int[15000];
+        double start = omp_get_wtime();
+        simulate_optimal(arrIn, arrOut, alive, 15000, 15000);
+        double end = omp_get_wtime();
+        double time_static = end - start;
+        
+        start = omp_get_wtime();
+        simulate_fragmented(arrIn2D, arrOut2D, 15000, 15000);
+        end = omp_get_wtime();
+        double time_frag = end -start;
+        cout << i + 1 << "/100" << " time_static: " << time_static << " time_frag: "<< time_frag << endl;
+        csv1 << i+1 << (15000*15000)/time_static << (15000*15000)/time_frag;
+        csv1.end_row();
+
+        swap(arrIn,arrOut);
+        swap(arrIn2D,arrOut2D);
+        delete[] alive;
+    }
+    
+    csv1.close();
+    free2D(arrIn2D,15000);
+    delete[] arrIn;
+    delete[] arrOut;
+    free2D(arrOut2D,15000);
+
+    arrIn = generate_array(15000 * 15000);
+    arrIn2D = generate_array2D(15000);
+    cout << "Static + fragmented 1 thread" << endl;
+    omp_set_num_threads(1);
     for (int i = 0; i < 100; ++i)
     {
         CellType *arrOut = generate_array(15000 * 15000, true);
@@ -187,8 +221,8 @@ int main()
         end = omp_get_wtime();
         double time_frag = end -start;
         cout << i + 1 << "/100" << " time_static: " << time_static << " time_frag: "<< time_frag << endl;
-        csv1 << i+1 << (15000*15000)/time_static << (15000*15000)/time_frag;
-        csv1.end_row();
+        csv2 << i+1 << (15000*15000)/time_static << (15000*15000)/time_frag;
+        csv2.end_row();
 
         arrIn = arrOut;
         arrIn2D = arrOut2D;
@@ -196,7 +230,5 @@ int main()
         delete[] alive;
         delete[] arrOut;
     }
-    
-    csv1.close();
-    
+    csv2.close();
 }
